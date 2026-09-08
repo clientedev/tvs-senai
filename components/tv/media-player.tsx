@@ -136,7 +136,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
 
   if (contents.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#003B71]">
+      <div className="flex h-full flex-1 items-center justify-center bg-[#003B71]">
         <div className="text-center text-white">
           <div className="text-6xl mb-4">📺</div>
           <h2 className="text-3xl font-bold">SENAI Cast</h2>
@@ -207,7 +207,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
   }
 
   return (
-    <div className="flex-1 relative bg-black overflow-hidden">
+    <div className="relative h-full flex-1 overflow-hidden bg-black">
       <div
         className={`absolute inset-0 transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
       >

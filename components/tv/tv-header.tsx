@@ -1,6 +1,5 @@
 "use client"
 
-import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import {
   Cloud,
@@ -13,8 +12,7 @@ import {
   Sun,
 } from "lucide-react"
 import type { InstitutionSettings } from "@/lib/types"
-import type { OverlayBox, TVOverlayLayout } from "@/lib/tv-overlay"
-import { overlayStyle } from "@/lib/tv-overlay"
+import type { TVOverlayLayout } from "@/lib/tv-overlay"
 import { ensureHttpsUrl } from "@/lib/url"
 
 interface TVHeaderProps {
@@ -51,27 +49,13 @@ const WEATHER_ICONS = {
   "cloud-lightning": CloudLightning,
 }
 
-function OverlayPanel({
-  box,
-  children,
-  className = "",
-}: {
-  box: OverlayBox
-  children: ReactNode
-  className?: string
-}) {
-  if (!box.visible) return null
-  return (
-    <div style={overlayStyle(box)} className={`pointer-events-none ${className}`}>
-      {children}
-    </div>
-  )
-}
-
 export function TVHeader({ institution, overlay }: TVHeaderProps) {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [weather, setWeather] = useState<WeatherState | null>(null)
   const logoSrc = institution.logo_url ? ensureHttpsUrl(institution.logo_url) : null
+  const showLogo = overlay.logo.visible
+  const showWeather = overlay.weather.visible
+  const showClock = overlay.clock.visible
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -81,6 +65,7 @@ export function TVHeader({ institution, overlay }: TVHeaderProps) {
   }, [])
 
   useEffect(() => {
+    if (!showWeather) return
     let cancelled = false
 
     const loadWeather = async () => {
@@ -107,7 +92,9 @@ export function TVHeader({ institution, overlay }: TVHeaderProps) {
       cancelled = true
       clearInterval(weatherTimer)
     }
-  }, [])
+  }, [showWeather])
+
+  if (!showLogo && !showWeather && !showClock) return null
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("pt-BR", {
@@ -122,62 +109,61 @@ export function TVHeader({ institution, overlay }: TVHeaderProps) {
       weekday: "long",
       day: "2-digit",
       month: "long",
-      year: "numeric",
     })
   }
 
   const WeatherIcon = weather ? WEATHER_ICONS[weather.icon] : Cloud
 
   return (
-    <>
-      <svg width="0" height="0" className="absolute" aria-hidden="true">
-        <filter id="tv-logo-knockout-white" colorInterpolationFilters="sRGB">
-          <feColorMatrix
-            type="matrix"
-            values="1 0 0 0 0
-                    0 1 0 0 0
-                    0 0 1 0 0
-                    -1 -1 -1 3 0"
-          />
-        </filter>
-      </svg>
-
-      <OverlayPanel box={overlay.logo}>
-        <div className="flex items-center gap-3 bg-transparent">
+    <header className="z-30 flex h-[12%] min-h-[96px] w-full shrink-0 items-center justify-between gap-6 border-b-4 border-[#E30613] bg-[#111111] px-8 text-white">
+      {showLogo ? (
+        <div className="flex min-w-0 flex-1 items-center gap-5">
           {logoSrc && (
-            <img
-              src={logoSrc}
-              alt=""
-              className="h-14 w-auto max-w-full bg-transparent object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)]"
-              style={{ filter: "url(#tv-logo-knockout-white)", background: "transparent" }}
-            />
+            <div className="flex h-16 shrink-0 items-center justify-center rounded-xl bg-white px-3 py-2">
+              <img
+                src={logoSrc}
+                alt=""
+                className="h-12 w-auto max-w-[220px] object-contain"
+              />
+            </div>
           )}
-          <h1 className="text-xl font-bold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
-            {institution.name}
-          </h1>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#E30613]">
+              SENAI Cast
+            </p>
+            <h1 className="truncate text-3xl font-bold leading-tight tracking-tight">
+              {institution.name}
+            </h1>
+          </div>
         </div>
-      </OverlayPanel>
+      ) : (
+        <div className="flex-1" />
+      )}
 
-      <OverlayPanel box={overlay.weather}>
-        {weather && (
-          <div className="flex items-center gap-3 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
-            <WeatherIcon className="h-10 w-10 shrink-0" aria-hidden="true" />
+      <div className="flex shrink-0 items-center gap-4">
+        {showWeather && weather && (
+          <div className="flex items-center gap-3 rounded-2xl bg-[#1d1d1d] px-5 py-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E30613]">
+              <WeatherIcon className="h-7 w-7 text-white" aria-hidden="true" />
+            </div>
             <div className="leading-tight">
               <div className="text-3xl font-bold tabular-nums">{weather.temperature}°</div>
-              <div className="text-sm capitalize opacity-90">
+              <div className="text-sm capitalize text-white/70">
                 {weather.city} · {weather.label}
               </div>
             </div>
           </div>
         )}
-      </OverlayPanel>
 
-      <OverlayPanel box={overlay.clock}>
-        <div className="text-right text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
-          <div className="text-3xl font-bold tabular-nums">{formatTime(currentTime)}</div>
-          <div className="text-base capitalize opacity-90">{formatDate(currentTime)}</div>
-        </div>
-      </OverlayPanel>
-    </>
+        {showClock && (
+          <div className="min-w-[210px] rounded-2xl bg-[#1d1d1d] px-5 py-3 text-right">
+            <div className="text-4xl font-bold leading-none tabular-nums tracking-tight">
+              {formatTime(currentTime)}
+            </div>
+            <div className="mt-1 text-sm capitalize text-white/70">{formatDate(currentTime)}</div>
+          </div>
+        )}
+      </div>
+    </header>
   )
 }

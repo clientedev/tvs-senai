@@ -354,11 +354,13 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
   }
 
   return (
-    <div className="relative h-screen w-screen flex flex-col overflow-hidden hide-scrollbar cursor-none select-none bg-black">
-      <MediaPlayer contents={contents} onContentChange={handleContentChange} />
+    <div className="flex h-screen w-screen flex-col overflow-hidden hide-scrollbar cursor-none select-none bg-black">
       <TVHeader institution={institution} overlay={overlay} />
-      <AnnouncementTicker announcements={announcements} overlay={overlay.announcements} />
-      <TransportTicker overlay={overlay.transport} />
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <MediaPlayer contents={contents} onContentChange={handleContentChange} />
+        <AnnouncementTicker announcements={announcements} overlay={overlay.announcements} />
+        <TransportTicker overlay={overlay.transport} />
+      </div>
     </div>
   )
 }

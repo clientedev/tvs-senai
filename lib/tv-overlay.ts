@@ -16,9 +16,9 @@ export type TVOverlayLayout = {
 }
 
 export const DEFAULT_OVERLAY_LAYOUT: TVOverlayLayout = {
-  logo: { visible: true, x: 1.5, y: 2, width: 22 },
-  clock: { visible: true, x: 82, y: 2, width: 16 },
-  weather: { visible: true, x: 66, y: 2, width: 15 },
+  logo: { visible: true, x: 0, y: 0, width: 100 },
+  clock: { visible: true, x: 0, y: 0, width: 100 },
+  weather: { visible: true, x: 0, y: 0, width: 100 },
   announcements: { visible: true, x: 0, y: 86, width: 100 },
   transport: { visible: true, x: 0, y: 93, width: 100 },
 }

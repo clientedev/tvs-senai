@@ -195,21 +195,28 @@ export default function InstitutionPage() {
             <CardDescription>Como o cabeçalho aparecerá na TV</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-3 bg-black text-white">
-                <div className="flex items-center gap-4">
+            <div className="overflow-hidden rounded-lg border border-black/10">
+              <div className="flex items-center justify-between gap-4 border-b-4 border-[#E30613] bg-[#111111] px-5 py-4 text-white">
+                <div className="flex min-w-0 items-center gap-4">
                   {logoUrl && (
-                    <img
-                      src={ensureHttpsUrl(logoUrl) || "/placeholder.svg"}
-                      alt="Logo"
-                      className="h-10 w-auto object-contain bg-transparent"
-                    />
+                    <div className="flex h-12 items-center rounded-lg bg-white px-2 py-1">
+                      <img
+                        src={ensureHttpsUrl(logoUrl) || "/placeholder.svg"}
+                        alt="Logo"
+                        className="h-9 w-auto object-contain"
+                      />
+                    </div>
                   )}
-                  <span className="font-bold">{name || "Nome da Instituição"}</span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#E30613]">
+                      SENAI Cast
+                    </p>
+                    <span className="block truncate font-bold">{name || "Nome da Instituição"}</span>
+                  </div>
                 </div>
-                <div className="text-right text-sm">
-                  <div className="font-bold">14:30:00</div>
-                  <div className="opacity-80">segunda-feira, 7 de janeiro de 2026</div>
+                <div className="rounded-xl bg-[#1d1d1d] px-4 py-2 text-right text-sm">
+                  <div className="text-xl font-bold tabular-nums">14:30:00</div>
+                  <div className="capitalize text-white/70">segunda-feira, 8 de setembro</div>
                 </div>
               </div>
             </div>
