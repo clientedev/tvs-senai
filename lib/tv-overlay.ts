@@ -1,10 +1,9 @@
-import type { CSSProperties } from "react"
-
 export type OverlayBox = {
   visible: boolean
   x: number
   y: number
   width: number
+  color: string
 }
 
 export type TVOverlayLayout = {
@@ -15,16 +14,35 @@ export type TVOverlayLayout = {
   announcements: OverlayBox
 }
 
+export const DEFAULT_ANNOUNCEMENT_COLOR = "#003B71"
+export const DEFAULT_TRANSPORT_COLOR = "#111111"
+
 export const DEFAULT_OVERLAY_LAYOUT: TVOverlayLayout = {
-  logo: { visible: true, x: 0, y: 0, width: 100 },
-  clock: { visible: true, x: 0, y: 0, width: 100 },
-  weather: { visible: true, x: 0, y: 0, width: 100 },
-  announcements: { visible: true, x: 0, y: 86, width: 100 },
-  transport: { visible: true, x: 0, y: 93, width: 100 },
+  logo: { visible: true, x: 0, y: 0, width: 100, color: "#111111" },
+  clock: { visible: true, x: 0, y: 0, width: 100, color: "#111111" },
+  weather: { visible: true, x: 0, y: 0, width: 100, color: "#111111" },
+  announcements: { visible: true, x: 0, y: 86, width: 100, color: DEFAULT_ANNOUNCEMENT_COLOR },
+  transport: { visible: true, x: 0, y: 93, width: 100, color: DEFAULT_TRANSPORT_COLOR },
 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
+}
+
+function parseColor(value: unknown, fallback: string) {
+  if (typeof value !== "string") return fallback
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim())) return value.trim()
+  return fallback
+}
+
+export function contrastingText(hex: string) {
+  const raw = hex.replace("#", "")
+  const full = raw.length === 3 ? raw.split("").map((part) => part + part).join("") : raw
+  const r = Number.parseInt(full.slice(0, 2), 16)
+  const g = Number.parseInt(full.slice(2, 4), 16)
+  const b = Number.parseInt(full.slice(4, 6), 16)
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000
+  return yiq >= 160 ? "#111111" : "#ffffff"
 }
 
 function parseBox(value: unknown, fallback: OverlayBox): OverlayBox {
@@ -35,6 +53,7 @@ function parseBox(value: unknown, fallback: OverlayBox): OverlayBox {
     x: clamp(typeof box.x === "number" ? box.x : fallback.x, 0, 100),
     y: clamp(typeof box.y === "number" ? box.y : fallback.y, 0, 100),
     width: clamp(typeof box.width === "number" ? box.width : fallback.width, 8, 100),
+    color: parseColor(box.color, fallback.color),
   }
 }
 
@@ -55,16 +74,5 @@ function safeParse(value: string) {
     return JSON.parse(value)
   } catch {
     return null
-  }
-}
-
-export function overlayStyle(box: OverlayBox, extra?: CSSProperties): CSSProperties {
-  return {
-    position: "absolute",
-    left: `${box.x}%`,
-    top: `${box.y}%`,
-    width: `${box.width}%`,
-    zIndex: 30,
-    ...extra,
   }
 }

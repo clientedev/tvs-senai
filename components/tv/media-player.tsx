@@ -136,7 +136,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
 
   if (contents.length === 0) {
     return (
-      <div className="flex h-full flex-1 items-center justify-center bg-[#003B71]">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-[#003B71]">
         <div className="text-center text-white">
           <div className="text-6xl mb-4">📺</div>
           <h2 className="text-3xl font-bold">SENAI Cast</h2>
@@ -160,7 +160,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
           <iframe
             key={currentContent.id}
             src={embedUrl}
-            className="w-full h-full"
+            className="h-full w-full max-h-full max-w-full"
             allow="autoplay; encrypted-media"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
@@ -188,7 +188,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
           onEnded={handleVideoEnded}
           onError={handleVideoError}
           onCanPlay={handleVideoCanPlay}
-          className="w-full h-full object-contain"
+          className="max-h-full max-w-full object-contain"
         />
       )
     }
@@ -200,16 +200,16 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
         key={currentContent.id}
         src={safeUrl || "/placeholder.svg"}
         alt={currentContent.title}
-        className="w-full h-full object-contain"
+        className="max-h-full max-w-full object-contain"
         onError={handleImageError}
       />
     )
   }
 
   return (
-    <div className="relative h-full flex-1 overflow-hidden bg-black">
+    <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
       <div
-        className={`absolute inset-0 transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
+        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
       >
         {renderContent()}
       </div>

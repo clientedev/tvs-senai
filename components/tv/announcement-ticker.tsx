@@ -1,8 +1,7 @@
 "use client"
 
 import type { Announcement } from "@/lib/types"
-import type { OverlayBox } from "@/lib/tv-overlay"
-import { overlayStyle } from "@/lib/tv-overlay"
+import { contrastingText, type OverlayBox } from "@/lib/tv-overlay"
 
 interface AnnouncementTickerProps {
   announcements: Announcement[]
@@ -19,11 +18,17 @@ export function AnnouncementTicker({ announcements, overlay }: AnnouncementTicke
 
   if (active.length === 0) return null
 
+  const background = overlay.color
+  const color = contrastingText(background)
+
   return (
-    <footer style={overlayStyle(overlay, { height: "6%" })} className="relative overflow-hidden bg-[#003B71]">
+    <footer
+      className="relative h-[6.5vh] min-h-[52px] w-full shrink-0 overflow-hidden"
+      style={{ backgroundColor: background, color }}
+    >
       <div className="absolute inset-0 flex items-center">
         <div className="animate-ticker whitespace-nowrap">
-          <span className="px-4 text-2xl font-medium text-white">{active.join("     •     ")}</span>
+          <span className="px-4 text-2xl font-medium">{active.join("     •     ")}</span>
         </div>
       </div>
     </footer>

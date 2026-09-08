@@ -119,13 +119,11 @@ export function TVHeader({ institution, overlay }: TVHeaderProps) {
       {showLogo ? (
         <div className="flex min-w-0 flex-1 items-center gap-5">
           {logoSrc && (
-            <div className="flex h-16 shrink-0 items-center justify-center rounded-xl bg-white px-3 py-2">
-              <img
-                src={logoSrc}
-                alt=""
-                className="h-12 w-auto max-w-[220px] object-contain"
-              />
-            </div>
+            <img
+              src={logoSrc}
+              alt=""
+              className="h-14 w-auto max-w-[220px] shrink-0 object-contain"
+            />
           )}
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#E30613]">

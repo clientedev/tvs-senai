@@ -199,13 +199,11 @@ export default function InstitutionPage() {
               <div className="flex items-center justify-between gap-4 border-b-4 border-[#E30613] bg-[#111111] px-5 py-4 text-white">
                 <div className="flex min-w-0 items-center gap-4">
                   {logoUrl && (
-                    <div className="flex h-12 items-center rounded-lg bg-white px-2 py-1">
-                      <img
-                        src={ensureHttpsUrl(logoUrl) || "/placeholder.svg"}
-                        alt="Logo"
-                        className="h-9 w-auto object-contain"
-                      />
-                    </div>
+                    <img
+                      src={ensureHttpsUrl(logoUrl) || "/placeholder.svg"}
+                      alt="Logo"
+                      className="h-10 w-auto max-w-[160px] object-contain"
+                    />
                   )}
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#E30613]">

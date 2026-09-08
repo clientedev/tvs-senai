@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import type { OverlayBox } from "@/lib/tv-overlay"
-import { overlayStyle } from "@/lib/tv-overlay"
 
 interface LineStatus {
   nome: string
@@ -71,20 +70,20 @@ export function TransportTicker({ overlay }: TransportTickerProps) {
 
   if (!overlay.visible) return null
 
-  const style = overlayStyle(overlay, { height: "6.5%" })
+  const barClass = "relative flex h-[7vh] min-h-[56px] w-full shrink-0 items-center overflow-hidden"
 
   if (loading) {
     return (
-      <footer style={style} className="flex items-center justify-center overflow-hidden bg-black/80">
-        <span className="text-lg text-white opacity-70">Carregando status do transporte...</span>
+      <footer className={`${barClass} bg-[#111111]`}>
+        <span className="w-full text-center text-lg text-white opacity-70">Carregando status do transporte...</span>
       </footer>
     )
   }
 
   if (error || lines.length === 0) {
     return (
-      <footer style={style} className="flex items-center justify-center overflow-hidden bg-black/80">
-        <span className="text-sm text-white opacity-50">Status do transporte indisponível no momento</span>
+      <footer className={`${barClass} bg-[#111111]`}>
+        <span className="w-full text-center text-sm text-white opacity-50">Status do transporte indisponível no momento</span>
       </footer>
     )
   }
@@ -92,7 +91,7 @@ export function TransportTicker({ overlay }: TransportTickerProps) {
   const tickerItems = [...lines, ...lines]
 
   return (
-    <footer style={style} className="relative flex items-center overflow-hidden bg-[#111111]">
+    <footer className={`${barClass} bg-[#111111]`}>
       <div className="absolute inset-0 flex items-center">
         <div className="flex h-full animate-ticker items-center whitespace-nowrap">
           {tickerItems.map((l, i) => {
