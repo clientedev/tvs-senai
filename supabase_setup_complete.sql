@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS institution_settings (
 -- Tabela: media_contents (Conteúdos de Mídia - Imagens, Vídeos e YouTube)
 CREATE TABLE IF NOT EXISTS media_contents (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  type text NOT NULL CHECK (type IN ('image', 'video', 'youtube')),
+  type text NOT NULL CHECK (type IN ('image', 'video', 'youtube', 'live')),
   title text NOT NULL,
   file_url text NOT NULL,
   duration_seconds integer DEFAULT 10,

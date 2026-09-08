@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ImageIcon, MessageSquare, Monitor, Activity, Youtube, Video } from "lucide-react"
+import { ImageIcon, MessageSquare, Monitor, Activity, Youtube, Video, Radio } from "lucide-react"
 import type { MediaContent, Announcement, TVDevice, InstitutionSettings } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
 
@@ -194,11 +194,16 @@ export default function AdminDashboard() {
                         <Youtube className="w-6 h-6 text-white" />
                       </div>
                     )}
+                    {content.type === "live" && (
+                      <div className="w-full h-full flex items-center justify-center bg-[#0F7B3A]">
+                        <Radio className="w-6 h-6 text-white" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{content.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      {content.type === "image" ? "Imagem" : content.type === "video" ? "Vídeo" : "YouTube"} • {content.duration_seconds}s
+                      {content.type === "image" ? "Imagem" : content.type === "video" ? "Vídeo" : content.type === "live" ? "TV ao vivo" : "YouTube"} • {content.duration_seconds}s
                     </p>
                   </div>
                   <div className={`w-2 h-2 rounded-full ${content.is_active ? "bg-green-500" : "bg-muted-foreground"}`} />

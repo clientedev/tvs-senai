@@ -21,8 +21,8 @@ import { createClient } from "@/lib/supabase/client"
 import type { MediaContent } from "@/lib/types"
 import { detectMediaType, getEmbedUrl } from "@/lib/video-utils"
 import { ensureHttpsUrl } from "@/lib/url"
-import { Plus, Trash2, GripVertical, ImageIcon, Video, AlertCircle, Youtube, Loader2, Pencil, Calendar } from "lucide-react"
-import { compressImage } from "@/lib/utils"
+import { Plus, Trash2, GripVertical, ImageIcon, Video, AlertCircle, Youtube, Loader2, Pencil, Calendar, Radio } from "lucide-react"
+import { LIVE_CHANNELS } from "@/lib/live-channels"
 
 import {
   DndContext,
@@ -94,7 +94,7 @@ function SortableContentItem({
           />
         ) : (
           <div
-            className={`w-full h-full flex items-center justify-center ${content.type === "youtube" ? "bg-[#E30613]" : "bg-[#003B71]"}`}
+            className={`w-full h-full flex items-center justify-center ${content.type === "youtube" ? "bg-[#E30613]" : content.type === "live" ? "bg-[#0F7B3A]" : "bg-[#003B71]"}`}
           >
             {getTypeIcon(content.type)}
           </div>
@@ -153,7 +153,7 @@ export default function ContentPage() {
   const [formData, setFormData] = useState({
     name: "",
     url: "",
-    type: "image" as "image" | "video" | "youtube",
+    type: "image" as "image" | "video" | "youtube" | "live",
     duration: 10,
     scheduled_start: "",
     scheduled_end: ""
@@ -349,6 +349,7 @@ export default function ContentPage() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "youtube": return <Youtube className="w-6 h-6 text-white" />
+      case "live": return <Radio className="w-6 h-6 text-white" />
       case "video": return <Video className="w-6 h-6 text-white" />
       default: return <ImageIcon className="w-6 h-6 text-white" />
     }
@@ -357,6 +358,7 @@ export default function ContentPage() {
   const getTypeLabel = (type: string) => {
     switch (type) {
       case "youtube": return "YouTube/Vimeo"
+      case "live": return "TV ao vivo"
       case "video": return "Vídeo"
       default: return "Imagem"
     }
@@ -404,16 +406,50 @@ export default function ContentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Ou cole uma URL (YouTube, Vimeo, ou link direto)</Label>
+                <Label>TV ao vivo (canais públicos)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {LIVE_CHANNELS.map((channel) => (
+                    <Button
+                      key={channel.id}
+                      type="button"
+                      variant={formData.url === channel.url ? "default" : "outline"}
+                      size="sm"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          url: channel.url,
+                          type: "live",
+                          name: prev.name || channel.name,
+                          duration: prev.duration < 60 ? 300 : prev.duration,
+                        }))
+                      }
+                      className={formData.url === channel.url ? "bg-[#0F7B3A]" : ""}
+                    >
+                      {channel.name}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Streams oficiais da EBC e da Câmara. Emissoras comerciais não têm API aberta para embedding.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Ou cole uma URL (YouTube, Vimeo, HLS .m3u8 ou link direto)</Label>
                 <Input
                   value={formData.url.startsWith("data:") ? "" : formData.url}
                   onChange={(e) => {
                     const rawUrl = e.target.value
                     const url = ensureHttpsUrl(rawUrl)
                     const detected = detectMediaType(url)
-                    setFormData(prev => ({ ...prev, url, type: detected, duration: detected === 'youtube' ? 60 : prev.duration }))
+                    setFormData(prev => ({
+                      ...prev,
+                      url,
+                      type: detected,
+                      duration: detected === "youtube" ? 60 : detected === "live" ? 300 : prev.duration,
+                    }))
                   }}
-                  placeholder="https://youtube.com/watch?v=... ou https://exemplo.com/imagem.jpg"
+                  placeholder="https://youtube.com/watch?v=... ou https://exemplo.com/stream.m3u8"
                 />
               </div>
 
@@ -427,6 +463,10 @@ export default function ContentPage() {
                         alt="Preview"
                         className="w-full h-full object-contain"
                       />
+                    ) : formData.type === "live" ? (
+                      <div className="flex h-full w-full items-center justify-center bg-[#0F7B3A] text-sm font-medium text-white">
+                        TV ao vivo · stream HLS
+                      </div>
                     ) : formData.type === "youtube" ? (
                       (() => {
                         const embedUrl = getEmbedUrl(ensureHttpsUrl(formData.url))
@@ -495,10 +535,20 @@ export default function ContentPage() {
                       <Youtube className="w-4 h-4 mr-1" />
                       YouTube
                     </Button>
+                    <Button
+                      type="button"
+                      variant={formData.type === "live" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, type: "live", duration: prev.duration < 60 ? 300 : prev.duration }))}
+                      className={formData.type === "live" ? "bg-[#0F7B3A]" : ""}
+                    >
+                      <Radio className="w-4 h-4 mr-1" />
+                      TV ao vivo
+                    </Button>
                   </div>
                 </div>
 
-                {(formData.type === "image" || formData.type === "youtube") && (
+                {(formData.type === "image" || formData.type === "youtube" || formData.type === "live") && (
                   <div className="space-y-2">
                     <Label>Duração (segundos)</Label>
                     <Input

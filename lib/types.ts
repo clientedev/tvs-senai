@@ -9,7 +9,7 @@ export type InstitutionSettings = {
 
 export type MediaContent = {
   id: string
-  type: "image" | "video" | "youtube"
+  type: "image" | "video" | "youtube" | "live"
   title: string
   file_url: string
   duration_seconds: number

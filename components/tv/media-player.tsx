@@ -5,6 +5,7 @@ import { useEffect, useState, useRef, useCallback } from "react"
 import type { MediaContent } from "@/lib/types"
 import { getEmbedUrl } from "@/lib/video-utils"
 import { ensureHttpsUrl } from "@/lib/url"
+import { LivePlayer } from "./live-player"
 
 interface MediaPlayerProps {
   contents: MediaContent[]
@@ -77,10 +78,10 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
       const duration = (currentContent.duration_seconds || 10) * 1000
       console.log("[MediaPlayer] Imagem - timer de", duration, "ms")
       timerRef.current = setTimeout(goToNext, duration)
-    } else if (currentContent.type === "youtube") {
+    } else if (currentContent.type === "youtube" || currentContent.type === "live") {
       // YouTube: timer de segurança baseado na duração configurada
       // O iframe não emite eventos onEnded, então usamos timer
-      const duration = (currentContent.duration_seconds || 60) * 1000
+      const duration = (currentContent.duration_seconds || (currentContent.type === "live" ? 300 : 60)) * 1000
       console.log("[MediaPlayer] YouTube - timer de segurança:", duration, "ms")
       timerRef.current = setTimeout(goToNext, duration)
     } else if (currentContent.type === "video") {
@@ -148,6 +149,10 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
 
   const renderContent = () => {
     if (!currentContent) return null
+
+    if (currentContent.type === "live") {
+      return <LivePlayer src={currentContent.file_url} />
+    }
 
     if (currentContent.type === "youtube") {
       const safeUrl = ensureHttpsUrl(currentContent.file_url)

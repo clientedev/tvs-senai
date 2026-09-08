@@ -1,5 +1,7 @@
 // Utility functions for video URL handling
 
+import { isHlsUrl } from "@/lib/live-channels"
+
 export function isYouTubeUrl(url: string): boolean {
   return /(?:youtube\.com|youtu\.be)/i.test(url)
 }
@@ -50,15 +52,17 @@ export function getEmbedUrl(url: string): string | null {
   return null
 }
 
-export function detectMediaType(url: string): "image" | "video" | "youtube" {
+export function detectMediaType(url: string): "image" | "video" | "youtube" | "live" {
   if (isYouTubeUrl(url)) {
-    console.log("[v0] Detected YouTube URL:", url)
     return "youtube"
   }
 
   if (isVimeoUrl(url)) {
-    console.log("[v0] Detected Vimeo URL:", url)
     return "youtube"
+  }
+
+  if (isHlsUrl(url)) {
+    return "live"
   }
 
   // Check for video file extensions
