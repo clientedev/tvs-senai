@@ -49,7 +49,7 @@ export default function LoginPage() {
                     <div className="w-16 h-16 bg-[#E30613] rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-md">
                         <span className="text-white text-3xl font-bold">S</span>
                     </div>
-                    <CardTitle className="text-2xl">TV Corporativa SENAI</CardTitle>
+                    <CardTitle className="text-2xl">SENAI Cast</CardTitle>
                     <CardDescription>Entre para gerenciar o sistema</CardDescription>
                 </CardHeader>
                 <CardContent>

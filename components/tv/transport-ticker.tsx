@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { OverlayBox } from "@/lib/tv-overlay"
+import { overlayStyle } from "@/lib/tv-overlay"
 
 interface LineStatus {
   nome: string
@@ -11,27 +13,33 @@ interface LineStatus {
 }
 
 const LINE_COLORS: Record<string, { bg: string; text: string }> = {
-  "1": { bg: "#00539F", text: "#FFFFFF" }, // Azul
-  "2": { bg: "#008061", text: "#FFFFFF" }, // Verde
-  "3": { bg: "#EE3E34", text: "#FFFFFF" }, // Vermelha
-  "4": { bg: "#FED304", text: "#000000" }, // Amarela
-  "5": { bg: "#853092", text: "#FFFFFF" }, // Lilás
-  "7": { bg: "#A1195B", text: "#FFFFFF" }, // Rubi
-  "8": { bg: "#9E9D9D", text: "#FFFFFF" }, // Diamante
-  "9": { bg: "#00A88E", text: "#FFFFFF" }, // Esmeralda
-  "10": { bg: "#007C8F", text: "#FFFFFF" }, // Turquesa
-  "11": { bg: "#F04E22", text: "#FFFFFF" }, // Coral
-  "12": { bg: "#033F88", text: "#FFFFFF" }, // Safira
-  "13": { bg: "#00AC5A", text: "#FFFFFF" }, // Jade
-  "15": { bg: "#8F9194", text: "#FFFFFF" }, // Prata
+  "1": { bg: "#00539F", text: "#FFFFFF" },
+  "2": { bg: "#008061", text: "#FFFFFF" },
+  "3": { bg: "#EE3E34", text: "#FFFFFF" },
+  "4": { bg: "#FED304", text: "#000000" },
+  "5": { bg: "#853092", text: "#FFFFFF" },
+  "7": { bg: "#A1195B", text: "#FFFFFF" },
+  "8": { bg: "#9E9D9D", text: "#FFFFFF" },
+  "9": { bg: "#00A88E", text: "#FFFFFF" },
+  "10": { bg: "#007C8F", text: "#FFFFFF" },
+  "11": { bg: "#F04E22", text: "#FFFFFF" },
+  "12": { bg: "#033F88", text: "#FFFFFF" },
+  "13": { bg: "#00AC5A", text: "#FFFFFF" },
+  "15": { bg: "#8F9194", text: "#FFFFFF" },
 }
 
-export function TransportTicker() {
+interface TransportTickerProps {
+  overlay: OverlayBox
+}
+
+export function TransportTicker({ overlay }: TransportTickerProps) {
   const [lines, setLines] = useState<LineStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
   useEffect(() => {
+    if (!overlay.visible) return
+
     const fetchStatus = async () => {
       try {
         setError(false)
@@ -57,50 +65,49 @@ export function TransportTicker() {
     }
 
     fetchStatus()
-    const interval = setInterval(fetchStatus, 5 * 60 * 1000) // 5 minutos
+    const interval = setInterval(fetchStatus, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [overlay.visible])
+
+  if (!overlay.visible) return null
+
+  const style = overlayStyle(overlay, { height: "6.5%" })
 
   if (loading) {
     return (
-      <footer className="h-16 bg-[#000000] flex items-center justify-center border-t border-white/10">
-        <span className="text-white text-lg opacity-70">Carregando status do transporte...</span>
+      <footer style={style} className="flex items-center justify-center overflow-hidden bg-black/80">
+        <span className="text-lg text-white opacity-70">Carregando status do transporte...</span>
       </footer>
     )
   }
 
   if (error || lines.length === 0) {
     return (
-      <footer className="h-16 bg-[#000000] flex items-center justify-center border-t border-white/10">
-        <span className="text-white text-sm opacity-50">
-          ⚠️ Status do transporte indisponível no momento
-        </span>
+      <footer style={style} className="flex items-center justify-center overflow-hidden bg-black/80">
+        <span className="text-sm text-white opacity-50">Status do transporte indisponível no momento</span>
       </footer>
     )
   }
 
-  // Duplicate items for continuous scrolling effect
   const tickerItems = [...lines, ...lines]
 
   return (
-    <footer className="h-16 bg-[#111111] overflow-hidden relative border-t-2 border-white/10 flex items-center">
+    <footer style={style} className="relative flex items-center overflow-hidden bg-[#111111]">
       <div className="absolute inset-0 flex items-center">
-        <div className="flex animate-ticker whitespace-nowrap h-full items-center">
+        <div className="flex h-full animate-ticker items-center whitespace-nowrap">
           {tickerItems.map((l, i) => {
             const colors = LINE_COLORS[l.codigo] || { bg: "#333333", text: "#FFFFFF" }
             const isNormal = l.status.situacao === "Operação Normal"
-            
+
             return (
-              <div 
+              <div
                 key={`${l.codigo}-${i}`}
-                className="flex h-full items-center px-6 border-r border-white/20"
+                className="flex h-full items-center border-r border-white/20 px-6"
                 style={{ backgroundColor: colors.bg, color: colors.text }}
               >
                 <div className="flex flex-col justify-center">
-                  <span className="font-bold text-lg leading-tight shadow-sm drop-shadow-md">
-                    {l.nome}
-                  </span>
-                  <span className={`text-sm font-medium ${isNormal ? 'opacity-90' : 'animate-pulse'}`}>
+                  <span className="text-lg font-bold leading-tight drop-shadow-md">{l.nome}</span>
+                  <span className={`text-sm font-medium ${isNormal ? "opacity-90" : "animate-pulse"}`}>
                     {l.status.situacao}
                   </span>
                 </div>
@@ -112,4 +119,3 @@ export function TransportTicker() {
     </footer>
   )
 }
-

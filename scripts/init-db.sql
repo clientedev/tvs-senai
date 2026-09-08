@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS tv_devices (
   token text NOT NULL UNIQUE,
   last_seen timestamptz,
   is_active boolean DEFAULT true,
+  overlay_layout jsonb,
   created_at timestamptz DEFAULT now()
 );
 

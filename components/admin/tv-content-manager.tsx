@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Loader2, GripVertical, Eye } from "lucide-react"
+import { OverlayLayoutEditor } from "@/components/admin/overlay-layout-editor"
+import { parseOverlayLayout, type TVOverlayLayout } from "@/lib/tv-overlay"
 import {
     DndContext,
     closestCenter,
@@ -94,6 +96,7 @@ export function TVContentManager({ tvId, tvName }: TVContentManagerProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [contents, setContents] = useState<ContentItem[]>([])
     const [assignedOrder, setAssignedOrder] = useState<string[]>([])
+    const [overlay, setOverlay] = useState<TVOverlayLayout>(() => parseOverlayLayout(null))
     const [loading, setLoading] = useState(false)
     const [saving, setSaving] = useState(false)
     const supabase = createClient()
@@ -126,13 +129,21 @@ export function TVContentManager({ tvId, tvName }: TVContentManagerProps) {
 
             if (mediaError) throw mediaError
 
-            // 2. Get assignments for this TV
+            // 2. Get assignments and overlay layout for this TV
             const { data: assignments, error: assignError } = await supabase
                 .from("tv_content_assignments")
                 .select("content_id, order_index")
                 .eq("tv_id", tvId)
 
             if (assignError) throw assignError
+
+            const { data: tv } = await supabase
+                .from("tv_devices")
+                .select("overlay_layout")
+                .eq("id", tvId)
+                .single()
+
+            setOverlay(parseOverlayLayout(tv?.overlay_layout))
 
             const orderedAssignments = (assignments || [])
                 .slice()
@@ -180,6 +191,12 @@ export function TVContentManager({ tvId, tvName }: TVContentManagerProps) {
                 if (error) throw error
             }
 
+            const { error: overlayError } = await supabase
+                .from("tv_devices")
+                .update({ overlay_layout: overlay })
+                .eq("id", tvId)
+            if (overlayError) throw overlayError
+
             setIsOpen(false)
         } catch (err) {
             console.error("Error saving assignments:", err)
@@ -226,11 +243,11 @@ export function TVContentManager({ tvId, tvName }: TVContentManagerProps) {
                     Gerenciar Conteúdo
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Conteúdo para: {tvName}</DialogTitle>
                     <DialogDescription>
-                        Selecione quais mídias serão exibidas nesta TV.
+                        Escolha as mídias, a ordem e o que aparece nos intervalos da tela.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -301,6 +318,8 @@ export function TVContentManager({ tvId, tvName }: TVContentManagerProps) {
                             )}
                         </div>
                     )}
+
+                    {!loading && <OverlayLayoutEditor value={overlay} onChange={setOverlay} />}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4 border-t">

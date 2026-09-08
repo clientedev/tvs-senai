@@ -8,8 +8,8 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SENAICast - TV Corporativa",
-  description: "Sistema de Mídia Indoor Institucional SENAI-SP",
+  title: "SENAI Cast",
+  description: "Sistema de Mídia Indoor Institucional SENAI Cast",
   generator: "v0.app",
   icons: {
     icon: "/icon.png",

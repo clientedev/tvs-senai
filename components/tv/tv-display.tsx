@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation"
 import { TVHeader } from "./tv-header"
 import { MediaPlayer } from "./media-player"
 import { TransportTicker } from "./transport-ticker"
+import { AnnouncementTicker } from "./announcement-ticker"
 import { createClient } from "@/lib/supabase/client"
 import type { InstitutionSettings, MediaContent, Announcement } from "@/lib/types"
+import { parseOverlayLayout, type TVOverlayLayout } from "@/lib/tv-overlay"
 
 interface TVDisplayProps {
   tvId?: string
@@ -19,6 +21,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
   const [institution, setInstitution] = useState<InstitutionSettings | null>(null)
   const [contents, setContents] = useState<MediaContent[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [overlay, setOverlay] = useState<TVOverlayLayout>(() => parseOverlayLayout(null))
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = useMemo(() => createClient(), [])
@@ -69,7 +72,11 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
         setInstitution(JSON.parse(cachedInst))
         setContents(JSON.parse(cachedContents))
         if (cachedAnn) setAnnouncements(JSON.parse(cachedAnn))
-        if (cachedTV) tvIdRef.current = JSON.parse(cachedTV).id
+        if (cachedTV) {
+          const parsedTV = JSON.parse(cachedTV)
+          tvIdRef.current = parsedTV.id
+          if (parsedTV.overlay_layout) setOverlay(parseOverlayLayout(parsedTV.overlay_layout))
+        }
 
         // If we have cache, we are "loaded" enough to show something
         setIsLoaded(true)
@@ -134,7 +141,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
       // 1. Validate Token & Get TV ID
       const { data: tv, error: tvError } = await supabase
         .from("tv_devices")
-        .select("id, name, location")
+        .select("id, name, location, overlay_layout")
         .eq("token", currentToken)
         .single()
 
@@ -143,7 +150,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
         // Check if it's an RLS/policy error
         if (tvError.code === 'PGRST301' || tvError.message?.includes('permission') || tvError.message?.includes('policy')) {
           if (!isLoadedRef.current) {
-            throw new Error("Erro de permissão: Verifique as políticas RLS do Supabase. A tabela tv_devices precisa permitir leitura pública por token.")
+            throw new Error("Erro de permissão ao ler o dispositivo. Verifique o token da TV.")
           } else {
             console.warn("RLS/Permission error in background fetch")
             isLoadingRef.current = false
@@ -175,6 +182,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
       supabase.from("tv_devices").update({ last_seen: new Date().toISOString() }).eq("id", currentTvId).then()
 
       safeStorage.setItem('tv_cache_tv', JSON.stringify(tv))
+      setOverlay(parseOverlayLayout(tv.overlay_layout))
 
       // Setup subscription after we have the TV ID (only if not already setup)
       if (!channelRef.current || tvIdRef.current !== currentTvId) {
@@ -290,7 +298,14 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
       loadData(currentToken, true)
     }
 
-    return cleanup
+    const refreshTimer = setInterval(() => {
+      loadData(currentToken, true)
+    }, 20000)
+
+    return () => {
+      clearInterval(refreshTimer)
+      cleanup()
+    }
   }, [token, loadData, supabase, setupSubscription])
 
   const handleContentChange = async (content: MediaContent) => {
@@ -339,10 +354,11 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden hide-scrollbar cursor-none select-none">
-      <TVHeader institution={institution} />
+    <div className="relative h-screen w-screen flex flex-col overflow-hidden hide-scrollbar cursor-none select-none bg-black">
       <MediaPlayer contents={contents} onContentChange={handleContentChange} />
-      <TransportTicker />
+      <TVHeader institution={institution} overlay={overlay} />
+      <AnnouncementTicker announcements={announcements} overlay={overlay.announcements} />
+      <TransportTicker overlay={overlay.transport} />
     </div>
   )
 }

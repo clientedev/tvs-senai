@@ -1,34 +1,29 @@
 "use client"
 
 import type { Announcement } from "@/lib/types"
+import type { OverlayBox } from "@/lib/tv-overlay"
+import { overlayStyle } from "@/lib/tv-overlay"
 
 interface AnnouncementTickerProps {
   announcements: Announcement[]
+  overlay: OverlayBox
 }
 
-export function AnnouncementTicker({ announcements }: AnnouncementTickerProps) {
-  if (announcements.length === 0) {
-    return (
-      <footer className="h-16 bg-[#003B71] flex items-center justify-center">
-        <span className="text-white text-lg opacity-70">Nenhum aviso no momento</span>
-      </footer>
-    )
-  }
+export function AnnouncementTicker({ announcements, overlay }: AnnouncementTickerProps) {
+  if (!overlay.visible) return null
 
+  const active = announcements
+    .filter((a) => a.is_active)
+    .sort((a, b) => a.priority - b.priority)
+    .map((a) => a.content)
+
+  if (active.length === 0) return null
 
   return (
-    <footer className="h-16 bg-[#003B71] overflow-hidden relative">
+    <footer style={overlayStyle(overlay, { height: "6%" })} className="relative overflow-hidden bg-[#003B71]">
       <div className="absolute inset-0 flex items-center">
-        <div className="whitespace-nowrap animate-ticker">
-          <span className="text-white text-2xl font-medium px-4">
-            {announcements
-              .filter((a) => a.is_active)
-              .sort((a, b) => a.priority - b.priority) // Lower number = Higher priority usually, but user wanted "1 = maior prioridade". My sort here is ascending.
-              // Wait, storage logic had "priority: number".
-              // Let's assume ascending priority (1, 2, 3...)
-              .map((a) => a.content)
-              .join("     •     ")}
-          </span>
+        <div className="animate-ticker whitespace-nowrap">
+          <span className="px-4 text-2xl font-medium text-white">{active.join("     •     ")}</span>
         </div>
       </div>
     </footer>

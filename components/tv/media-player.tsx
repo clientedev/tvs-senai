@@ -139,7 +139,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
       <div className="flex-1 flex items-center justify-center bg-[#003B71]">
         <div className="text-center text-white">
           <div className="text-6xl mb-4">📺</div>
-          <h2 className="text-3xl font-bold">SENAI-SP</h2>
+          <h2 className="text-3xl font-bold">SENAI Cast</h2>
           <p className="text-xl opacity-80 mt-2">Aguardando conteúdo...</p>
         </div>
       </div>

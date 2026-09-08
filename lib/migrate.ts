@@ -67,8 +67,14 @@ export async function ensureSchema() {
       token text NOT NULL UNIQUE,
       last_seen timestamptz,
       is_active boolean DEFAULT true,
+      overlay_layout jsonb,
       created_at timestamptz DEFAULT now()
     )
+  `)
+
+  await query(`
+    ALTER TABLE tv_devices
+    ADD COLUMN IF NOT EXISTS overlay_layout jsonb
   `)
 
   await query(`

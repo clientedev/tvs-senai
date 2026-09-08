@@ -20,6 +20,8 @@ export type MediaContent = {
   created_at: string
 }
 
+import type { TVOverlayLayout } from "@/lib/tv-overlay"
+
 export type TVDevice = {
   id: string
   name: string
@@ -27,6 +29,7 @@ export type TVDevice = {
   token: string
   last_seen: string | null
   is_active: boolean
+  overlay_layout?: TVOverlayLayout | null
   created_at: string
 }
 

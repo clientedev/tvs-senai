@@ -31,7 +31,7 @@ export function AdminSidebar() {
             <Tv className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-foreground">TV Corporativa</h1>
+            <h1 className="font-bold text-foreground">SENAI Cast</h1>
             <p className="text-xs text-muted-foreground">Painel Admin</p>
           </div>
         </Link>

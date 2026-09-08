@@ -8,7 +8,7 @@ export default function HomePage() {
           <div className="w-24 h-24 bg-white rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-xl">
             <span className="text-[#E30613] text-4xl font-bold">S</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">TV Corporativa SENAI-SP</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">SENAI Cast</h1>
           <p className="text-white/70 text-lg">Sistema de Mídia Indoor Institucional</p>
         </div>
 
@@ -29,7 +29,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <p className="mt-8 text-white/50 text-sm">Versão 1.0 (Supabase) • Desenvolvido para SENAI-SP</p>
+        <p className="mt-8 text-white/50 text-sm">Versão 1.0 • Desenvolvido para o SENAI</p>
       </div>
     </div>
   )
