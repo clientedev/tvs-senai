@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: senaicast-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: senaicast
+      POSTGRES_PASSWORD: senaicast
+      POSTGRES_DB: senaicast
+    ports:
+      - "5432:5432"
+    volumes:
+      - senaicast_pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+
+volumes:
+  senaicast_pgdata:

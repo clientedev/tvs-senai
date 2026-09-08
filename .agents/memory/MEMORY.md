@@ -1,0 +1,1 @@
+- [PostgreSQL migration](postgresql-migration.md) — the app keeps a small client compatibility layer while all persistence and auth run through its own Next.js API and Replit PostgreSQL.
