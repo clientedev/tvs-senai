@@ -325,15 +325,15 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
 
   if (error) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#003B71] text-white">
-        <div className="text-center p-8 bg-black/20 rounded-xl backdrop-blur-sm">
-          <h1 className="text-4xl font-bold mb-4">:(</h1>
-          <p className="text-xl mb-4">{error}</p>
-          <div className="flex gap-4 justify-center">
-            <button onClick={handleRetry} className="px-6 py-2 bg-white text-[#003B71] rounded-full font-bold hover:bg-opacity-90 transition">
+      <div style={{ height: "100vh", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#003B71", color: "#ffffff" }}>
+        <div style={{ textAlign: "center", padding: "32px", backgroundColor: "rgba(0,0,0,0.2)", borderRadius: "16px" }}>
+          <h1 style={{ fontSize: "48px", fontWeight: 700, marginBottom: "16px" }}>:(</h1>
+          <p style={{ fontSize: "20px", marginBottom: "16px" }}>{error}</p>
+          <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
+            <button onClick={handleRetry} style={{ padding: "8px 24px", backgroundColor: "#ffffff", color: "#003B71", borderRadius: "999px", fontWeight: 700, border: "none", cursor: "pointer", fontSize: "16px" }}>
               Tentar Novamente
             </button>
-            <button onClick={handleClearCache} className="px-6 py-2 bg-red-600 text-white rounded-full font-bold hover:bg-opacity-90 transition">
+            <button onClick={handleClearCache} style={{ padding: "8px 24px", backgroundColor: "#dc2626", color: "#ffffff", borderRadius: "999px", fontWeight: 700, border: "none", cursor: "pointer", fontSize: "16px" }}>
               Limpar Cache
             </button>
           </div>
@@ -344,17 +344,28 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
 
   if (!isLoaded || !institution) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#003B71]">
-        <div className="text-white text-center">
-          <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-xl">Carregando...</p>
+      <div style={{ height: "100vh", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#003B71" }}>
+        <div style={{ textAlign: "center", color: "#ffffff" }}>
+          <div className="animate-spin" style={{ width: "64px", height: "64px", border: "4px solid rgba(255,255,255,0.3)", borderTopColor: "#ffffff", borderRadius: "50%", margin: "0 auto 16px" }} />
+          <p style={{ fontSize: "20px" }}>Carregando...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden hide-scrollbar cursor-none select-none bg-black">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100vw",
+        overflow: "hidden",
+        cursor: "none",
+        userSelect: "none",
+        backgroundColor: "#000000",
+      }}
+    >
       <TVHeader institution={institution} overlay={overlay} />
       <MediaPlayer contents={contents} onContentChange={handleContentChange} />
       <AnnouncementTicker announcements={announcements} overlay={overlay.announcements} />

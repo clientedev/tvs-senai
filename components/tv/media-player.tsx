@@ -14,15 +14,13 @@ interface MediaPlayerProps {
 
 export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const [opacity, setOpacity] = useState(1)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const contentsRef = useRef(contents)
   const onContentChangeRef = useRef(onContentChange)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
-  useEffect(() => {
-    onContentChangeRef.current = onContentChange
-  }, [onContentChange])
+  useEffect(() => { onContentChangeRef.current = onContentChange }, [onContentChange])
 
   useEffect(() => {
     contentsRef.current = contents
@@ -34,117 +32,73 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
   const currentContent = contents[currentIndex]
 
   const goToNext = useCallback(() => {
-    const contentsList = contentsRef.current
-    if (contentsList.length === 0) return
+    const list = contentsRef.current
+    if (list.length === 0) return
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
 
-    // Limpa qualquer timer ativo antes de avançar
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-
-    setIsTransitioning(true)
+    // Fade out
+    setOpacity(0)
     setTimeout(() => {
-      setCurrentIndex((prev) => {
-        const nextIndex = (prev + 1) % contentsList.length
-        console.log("[MediaPlayer] Avançando para índice:", nextIndex, "de", contentsList.length)
-        return nextIndex
-      })
-      setIsTransitioning(false)
-    }, 500)
+      setCurrentIndex((prev) => (prev + 1) % list.length)
+      setOpacity(1)
+    }, 400)
   }, [])
 
   useEffect(() => {
     if (!currentContent || contents.length === 0) return
 
-    console.log(
-      "[MediaPlayer] Conteúdo atual:",
-      currentContent.title,
-      "| Tipo:",
-      currentContent.type,
-      "| Duração:",
-      currentContent.duration_seconds,
-    )
     onContentChangeRef.current?.(currentContent)
-
-    // Limpa timer anterior
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
 
     if (currentContent.type === "image") {
-      // Imagem: avança após duração definida (padrão 10s)
       const duration = (currentContent.duration_seconds || 10) * 1000
-      console.log("[MediaPlayer] Imagem - timer de", duration, "ms")
       timerRef.current = setTimeout(goToNext, duration)
     } else if (currentContent.type === "youtube" || currentContent.type === "live") {
-      // YouTube: timer de segurança baseado na duração configurada
       const duration = (currentContent.duration_seconds || (currentContent.type === "live" ? 300 : 60)) * 1000
-      console.log("[MediaPlayer] YouTube - timer de segurança:", duration, "ms")
       timerRef.current = setTimeout(goToNext, duration)
     } else if (currentContent.type === "video") {
-      if (currentContent.loop_video) {
-        // Em loop: sem timer, o vídeo repete indefinidamente
-        console.log("[MediaPlayer] Vídeo em loop - sem avanço automático")
-      } else {
-        // Vídeo normal: timeout de segurança caso o vídeo trave
+      if (!currentContent.loop_video) {
         const maxDuration = (currentContent.duration_seconds || 600) * 1000
-        console.log("[MediaPlayer] Vídeo - timeout máximo de segurança:", maxDuration, "ms")
-        timerRef.current = setTimeout(() => {
-          console.log("[MediaPlayer] Vídeo - timeout de segurança atingido, avançando")
-          goToNext()
-        }, maxDuration)
+        timerRef.current = setTimeout(goToNext, maxDuration)
       }
     }
 
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-    }
-  }, [currentContent?.id, currentContent?.type, currentContent?.duration_seconds, goToNext])
+    return () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null } }
+  }, [currentContent?.id, currentContent?.type, currentContent?.duration_seconds, currentContent?.loop_video, goToNext])
 
-  const handleVideoEnded = useCallback(() => {
-    console.log("[MediaPlayer] Vídeo terminou, avançando para próximo")
-    goToNext()
-  }, [goToNext])
+  const handleVideoEnded = useCallback(() => { goToNext() }, [goToNext])
 
-  const handleVideoError = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
-    console.log("[MediaPlayer] Erro no vídeo, pulando:", e.currentTarget.error?.message)
+  const handleVideoError = useCallback(() => {
     setTimeout(goToNext, 1000)
   }, [goToNext])
 
   const handleVideoCanPlay = useCallback(() => {
-    // Garante que o vídeo realmente inicia reprodução
     if (videoRef.current) {
-      videoRef.current.play().catch((err) => {
-        console.log("[MediaPlayer] Erro ao iniciar vídeo (autoplay bloqueado?):", err)
-        // Se autoplay bloqueado, tenta muted + play
+      videoRef.current.play().catch(() => {
         if (videoRef.current) {
           videoRef.current.muted = true
-          videoRef.current.play().catch(() => {
-            console.log("[MediaPlayer] Falha total no autoplay, avançando em 5s")
-            setTimeout(goToNext, 5000)
-          })
+          videoRef.current.play().catch(() => setTimeout(goToNext, 5000))
         }
       })
     }
   }, [goToNext])
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    console.log("[MediaPlayer] Erro na imagem")
-    e.currentTarget.src = "/content-unavailable.jpg"
-  }
-
   if (contents.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-[#003B71]">
-        <div className="text-center text-white">
-          <div className="text-6xl mb-4">📺</div>
-          <h2 className="text-3xl font-bold">SENAI Cast</h2>
-          <p className="text-xl opacity-80 mt-2">Aguardando conteúdo...</p>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#003B71",
+        }}
+      >
+        <div style={{ textAlign: "center", color: "#ffffff" }}>
+          <div style={{ fontSize: "64px", marginBottom: "16px" }}>📺</div>
+          <h2 style={{ margin: 0, fontSize: "32px", fontWeight: 700 }}>SENAI Cast</h2>
+          <p style={{ margin: "8px 0 0", fontSize: "20px", opacity: 0.8 }}>Aguardando conteúdo...</p>
         </div>
       </div>
     )
@@ -158,38 +112,32 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
     }
 
     if (currentContent.type === "youtube") {
-      const safeUrl = ensureHttpsUrl(currentContent.file_url)
-      // IMPORTANTE: loop=0 para o YouTube avançar para o próximo conteúdo
-      // O timer de segurança (duration_seconds) garante a troca mesmo sem evento onEnded
-      const embedUrl = getEmbedUrl(safeUrl)
-      console.log("[MediaPlayer] YouTube embed URL:", embedUrl)
+      const embedUrl = getEmbedUrl(ensureHttpsUrl(currentContent.file_url))
       if (embedUrl) {
         return (
           <iframe
             key={currentContent.id}
             src={embedUrl}
-            className="h-full w-full max-h-full max-w-full"
+            style={{ width: "100%", height: "100%", border: "none" }}
             allow="autoplay; encrypted-media"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
-            style={{ border: "none" }}
           />
         )
       }
       return (
-        <div className="w-full h-full flex items-center justify-center bg-[#003B71] text-white">
+        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#003B71", color: "#fff" }}>
           <p>URL de vídeo inválida</p>
         </div>
       )
     }
 
     if (currentContent.type === "video") {
-      const safeUrl = ensureHttpsUrl(currentContent.file_url)
       return (
         <video
           key={currentContent.id}
           ref={videoRef}
-          src={safeUrl}
+          src={ensureHttpsUrl(currentContent.file_url)}
           autoPlay
           muted
           playsInline
@@ -197,39 +145,74 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
           onEnded={currentContent.loop_video ? undefined : handleVideoEnded}
           onError={handleVideoError}
           onCanPlay={handleVideoCanPlay}
-          className="max-h-full max-w-full object-contain"
+          style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", display: "block" }}
         />
       )
     }
 
-    // Imagem
-    const safeUrl = ensureHttpsUrl(currentContent.file_url)
+    // Image
     return (
       <img
         key={currentContent.id}
-        src={safeUrl || "/placeholder.svg"}
+        src={ensureHttpsUrl(currentContent.file_url) || "/placeholder.svg"}
         alt={currentContent.title}
-        className="max-h-full max-w-full object-contain"
-        onError={handleImageError}
+        style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", display: "block" }}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg" }}
       />
     )
   }
 
   return (
-    <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
+    <div
+      style={{
+        position: "relative",
+        flex: 1,
+        minHeight: 0,
+        overflow: "hidden",
+        backgroundColor: "#000000",
+      }}
+    >
+      {/* Transition wrapper */}
       <div
-        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity,
+          transition: "opacity 0.4s ease",
+        }}
       >
         {renderContent()}
       </div>
 
-      {/* Indicador de conteúdo */}
+      {/* Dot indicators */}
       {contents.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        <div
+          style={{
+            position: "absolute",
+            bottom: "16px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            gap: "8px",
+            zIndex: 10,
+          }}
+        >
           {contents.map((_, index) => (
             <div
               key={index}
-              className={`w-3 h-3 rounded-full transition-colors ${index === currentIndex ? "bg-white" : "bg-white/40"}`}
+              style={{
+                width: "12px",
+                height: "12px",
+                borderRadius: "50%",
+                backgroundColor: index === currentIndex ? "#ffffff" : "rgba(255,255,255,0.35)",
+                transition: "background-color 0.3s",
+              }}
             />
           ))}
         </div>

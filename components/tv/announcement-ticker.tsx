@@ -20,15 +20,45 @@ export function AnnouncementTicker({ announcements, overlay }: AnnouncementTicke
 
   const background = overlay.color
   const color = contrastingText(background)
+  const text = active.join("     •     ")
 
   return (
     <footer
-      className="relative h-[6.5vh] min-h-[52px] w-full shrink-0 overflow-hidden"
-      style={{ backgroundColor: background, color }}
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "52px",
+        flexShrink: 0,
+        overflow: "hidden",
+        backgroundColor: background,
+        color,
+        boxSizing: "border-box",
+      }}
     >
-      <div className="absolute inset-0 flex items-center">
-        <div className="animate-ticker whitespace-nowrap">
-          <span className="px-4 text-2xl font-medium">{active.join("     •     ")}</span>
+      {/* Duplicate the text so the loop looks seamless */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          className="animate-ticker"
+          style={{
+            display: "inline-block",
+            whiteSpace: "nowrap",
+            willChange: "transform",
+          }}
+        >
+          <span style={{ paddingLeft: "16px", paddingRight: "16px", fontSize: "22px", fontWeight: 500 }}>
+            {text}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{text}
+          </span>
         </div>
       </div>
     </footer>
