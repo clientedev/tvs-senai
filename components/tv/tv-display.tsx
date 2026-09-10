@@ -300,7 +300,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
 
     const refreshTimer = setInterval(() => {
       loadData(currentToken, true)
-    }, 20000)
+    }, 5000) // Atualiza a cada 5s para refletir mudancas sem precisar de refresh manual
 
     return () => {
       clearInterval(refreshTimer)

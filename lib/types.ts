@@ -14,6 +14,7 @@ export type MediaContent = {
   file_url: string
   duration_seconds: number
   is_active: boolean
+  loop_video: boolean
   scheduled_start: string | null
   scheduled_end: string | null
   display_order: number

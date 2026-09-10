@@ -80,19 +80,22 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
       timerRef.current = setTimeout(goToNext, duration)
     } else if (currentContent.type === "youtube" || currentContent.type === "live") {
       // YouTube: timer de segurança baseado na duração configurada
-      // O iframe não emite eventos onEnded, então usamos timer
       const duration = (currentContent.duration_seconds || (currentContent.type === "live" ? 300 : 60)) * 1000
       console.log("[MediaPlayer] YouTube - timer de segurança:", duration, "ms")
       timerRef.current = setTimeout(goToNext, duration)
     } else if (currentContent.type === "video") {
-      // Vídeo nativo: avança pelo onEnded, mas garante timeout máximo de segurança
-      // Usa duration_seconds como backup caso o vídeo trave (máximo 10 minutos se não configurado)
-      const maxDuration = (currentContent.duration_seconds || 600) * 1000
-      console.log("[MediaPlayer] Vídeo - timeout máximo de segurança:", maxDuration, "ms")
-      timerRef.current = setTimeout(() => {
-        console.log("[MediaPlayer] Vídeo - timeout de segurança atingido, avançando")
-        goToNext()
-      }, maxDuration)
+      if (currentContent.loop_video) {
+        // Em loop: sem timer, o vídeo repete indefinidamente
+        console.log("[MediaPlayer] Vídeo em loop - sem avanço automático")
+      } else {
+        // Vídeo normal: timeout de segurança caso o vídeo trave
+        const maxDuration = (currentContent.duration_seconds || 600) * 1000
+        console.log("[MediaPlayer] Vídeo - timeout máximo de segurança:", maxDuration, "ms")
+        timerRef.current = setTimeout(() => {
+          console.log("[MediaPlayer] Vídeo - timeout de segurança atingido, avançando")
+          goToNext()
+        }, maxDuration)
+      }
     }
 
     return () => {
@@ -190,7 +193,8 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
           autoPlay
           muted
           playsInline
-          onEnded={handleVideoEnded}
+          loop={currentContent.loop_video === true}
+          onEnded={currentContent.loop_video ? undefined : handleVideoEnded}
           onError={handleVideoError}
           onCanPlay={handleVideoCanPlay}
           className="max-h-full max-w-full object-contain"

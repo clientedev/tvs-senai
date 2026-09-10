@@ -87,6 +87,9 @@ export async function ensureSchema() {
     CHECK (type IN ('image', 'video', 'youtube', 'live'))
   `)
 
+  // Loop video support
+  await query(`ALTER TABLE media_contents ADD COLUMN IF NOT EXISTS loop_video boolean DEFAULT false`)
+
   await query(`
     CREATE TABLE IF NOT EXISTS tv_content_assignments (
       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,

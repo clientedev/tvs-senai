@@ -155,6 +155,7 @@ export default function ContentPage() {
     url: "",
     type: "image" as "image" | "video" | "youtube" | "live",
     duration: 10,
+    loop_video: false,
     scheduled_start: "",
     scheduled_end: ""
   })
@@ -199,6 +200,7 @@ export default function ContentPage() {
         file_url: formData.url,
         type: formData.type,
         duration_seconds: formData.duration,
+        loop_video: formData.loop_video,
         scheduled_start: formData.scheduled_start || null,
         scheduled_end: formData.scheduled_end || null,
         is_active: true,
@@ -267,6 +269,7 @@ export default function ContentPage() {
       url: content.file_url,
       type: content.type,
       duration: content.duration_seconds,
+      loop_video: content.loop_video ?? false,
       scheduled_start: content.scheduled_start ? new Date(content.scheduled_start).toISOString().slice(0, 16) : "",
       scheduled_end: content.scheduled_end ? new Date(content.scheduled_end).toISOString().slice(0, 16) : ""
     })
@@ -277,7 +280,7 @@ export default function ContentPage() {
     setIsDialogOpen(false)
     setEditingContent(null)
     setUploadError(null)
-    setFormData({ name: "", url: "", type: "image", duration: 10, scheduled_start: "", scheduled_end: "" })
+    setFormData({ name: "", url: "", type: "image", duration: 10, loop_video: false, scheduled_start: "", scheduled_end: "" })
   }
 
   const handleToggleActive = async (id: string, active: boolean) => {
@@ -589,6 +592,19 @@ export default function ContentPage() {
                   <p className="text-[10px] text-muted-foreground">Deixe em branco para exibir indefinidamente.</p>
                 </div>
               </div>
+
+              {formData.type === "video" && (
+                <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Repetir vídeo</p>
+                    <p className="text-xs text-muted-foreground">O vídeo fica em loop ao invés de avançar para o próximo</p>
+                  </div>
+                  <Switch
+                    checked={formData.loop_video}
+                    onCheckedChange={(v) => setFormData(prev => ({ ...prev, loop_video: v }))}
+                  />
+                </div>
+              )}
 
               <Button
                 onClick={handleSave}
