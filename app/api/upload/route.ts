@@ -5,8 +5,9 @@ import { query } from "@/lib/db"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
+export const maxRequestBodySize = "50mb"
 
-const MAX_BYTES = 25 * 1024 * 1024
+const MAX_BYTES = 50 * 1024 * 1024
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser()
