@@ -107,6 +107,11 @@ export async function ensureSchema() {
     )
   `)
 
+  // Large Object support: store OID reference for large files (avoids loading blob into RAM)
+  await query(`ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS lo_oid oid`)
+  await query(`ALTER TABLE uploaded_files ALTER COLUMN data DROP NOT NULL`)
+  await query(`ALTER TABLE uploaded_files ALTER COLUMN data SET DEFAULT ''::bytea`)
+
   await query(`
     INSERT INTO institution_settings (name)
     SELECT 'Minha Instituição SENAI'

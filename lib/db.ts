@@ -38,7 +38,7 @@ function poolConfig(): PoolConfig {
   throw new Error("DATABASE_URL não está definida")
 }
 
-function getPool() {
+export function getPool() {
   if (!global.postgresPool) {
     global.postgresPool = new Pool(poolConfig())
     global.postgresPool.on("error", (error) => {
