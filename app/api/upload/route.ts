@@ -4,10 +4,10 @@ import { query } from "@/lib/db"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
-export const maxDuration = 60
-export const maxRequestBodySize = "50mb"
+export const maxDuration = 300
+export const maxRequestBodySize = "500mb"
 
-const MAX_BYTES = 50 * 1024 * 1024
+const MAX_BYTES = 500 * 1024 * 1024
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser()
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Arquivo inválido" }, { status: 400 })
     }
     if (file.size > MAX_BYTES) {
-      return NextResponse.json({ message: "Arquivo maior que 25 MB" }, { status: 413 })
+      return NextResponse.json({ message: "Arquivo maior que 500 MB" }, { status: 413 })
     }
 
     const safeName = requestedPath

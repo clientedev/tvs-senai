@@ -43,8 +43,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { format } from "date-fns"
 
-const MAX_IMAGE_SIZE = 20 * 1024 * 1024 // 20 MB para imagens (vão pelo servidor)
-const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024 // 2 GB para vídeos (direto ao storage)
+const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500 MB
 
 // Sortable Item Component
 function SortableContentItem({
@@ -162,7 +161,6 @@ export default function ContentPage() {
 
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const supabase = createClient()
 
   const sensors = useSensors(
@@ -300,93 +298,54 @@ export default function ContentPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadError(null)
-    setUploadProgress(null)
     setIsUploading(true)
 
     try {
-      const isVideo = file.type.startsWith("video/")
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error("Arquivo maior que 500 MB")
+      }
 
-      if (isVideo) {
-        // ── Vídeos: upload direto ao R2 via presigned URL (sem limite prático) ──
-        if (file.size > MAX_VIDEO_SIZE) {
-          throw new Error("Vídeo maior que 2 GB")
-        }
+      let fileToUpload = file
 
-        // 1. Pedir a presigned URL ao servidor
-        const presignRes = await fetch("/api/upload/presign", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size }),
-        })
-        if (!presignRes.ok) {
-          const err = await presignRes.json()
-          throw new Error(err.message || "Erro ao gerar URL de upload")
-        }
-        const { uploadUrl, publicUrl } = await presignRes.json()
-
-        // 2. PUT direto do browser para o R2 com progress real
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest()
-          xhr.open("PUT", uploadUrl)
-          xhr.setRequestHeader("Content-Type", file.type)
-          xhr.upload.onprogress = (ev) => {
-            if (ev.lengthComputable) {
-              setUploadProgress(Math.round((ev.loaded / ev.total) * 100))
-            }
-          }
-          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Erro ${xhr.status} ao enviar vídeo`)))
-          xhr.onerror = () => reject(new Error("Erro de rede ao enviar vídeo"))
-          xhr.send(file)
-        })
-
-        setFormData((prev) => ({
-          ...prev,
-          url: publicUrl,
-          type: "video",
-          name: prev.name || file.name.replace(/\.[^/.]+$/, ""),
-        }))
-      } else {
-        // ── Imagens: comprime e envia pelo servidor (≤ 20 MB) ──
-        if (file.size > MAX_IMAGE_SIZE) {
-          throw new Error("Imagem maior que 20 MB")
-        }
-
-        let fileToUpload = file
+      if (file.type.startsWith("image/")) {
         try {
           const compressedBlob = await new Promise<Blob>((resolve, reject) => {
             compressImage(file, 1920, 0.8)
-              .then(dataUrl => fetch(dataUrl).then(r => r.blob()).then(resolve).catch(reject))
+              .then(dataUrl => {
+                fetch(dataUrl).then(res => res.blob()).then(resolve).catch(reject)
+              })
               .catch(reject)
           })
           fileToUpload = new File([compressedBlob], file.name, { type: file.type })
-        } catch {
-          console.warn("Compression failed, using original file")
+        } catch (err) {
+          console.warn("Compression failed, using original file", err)
         }
-
-        const fileExt = file.name.split(".").pop()
-        const filePath = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-
-        const { error: uploadErr } = await supabase.storage
-          .from("corporate-media")
-          .upload(filePath, fileToUpload)
-
-        if (uploadErr) throw uploadErr
-
-        const { data: { publicUrl } } = supabase.storage.from("corporate-media").getPublicUrl(filePath)
-
-        setFormData((prev) => ({
-          ...prev,
-          url: publicUrl,
-          type: "image",
-          name: prev.name || file.name.replace(/\.[^/.]+$/, ""),
-        }))
       }
+
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadErr } = await supabase.storage
+        .from("corporate-media")
+        .upload(filePath, fileToUpload)
+
+      if (uploadErr) throw uploadErr
+
+      const { data: { publicUrl } } = supabase.storage.from("corporate-media").getPublicUrl(filePath)
+
+      setFormData((prev) => ({
+        ...prev,
+        url: publicUrl,
+        type: file.type.startsWith("video/") ? "video" : "image",
+        name: prev.name || file.name.replace(/\.[^/.]+$/, ""),
+      }))
+
     } catch (err: any) {
       console.error("Upload error:", err)
       setUploadError(`Erro no upload: ${err.message}`)
     } finally {
       setIsUploading(false)
-      setUploadProgress(null)
       e.target.value = ""
     }
   }
@@ -438,31 +397,14 @@ export default function ContentPage() {
               )}
 
               <div className="space-y-2">
-                <Label>Arquivo de Mídia (imagem até 20 MB · vídeo até 2 GB)</Label>
+                <Label>Arquivo de Mídia (máx. 500 MB)</Label>
                 <div className="flex gap-2">
                   <Input type="file" accept="image/*,video/*" onChange={handleFileUpload} disabled={isUploading} className="flex-1" />
                 </div>
                 {isUploading && (
-                  <div className="space-y-1 mt-2">
-                    {uploadProgress !== null ? (
-                      <>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Enviando vídeo...</span>
-                          <span className="font-medium">{uploadProgress}%</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                          <div
-                            className="h-2 rounded-full bg-[#003B71] transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Processando arquivo...</span>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Enviando arquivo... Vídeos grandes podem levar alguns minutos.</span>
                   </div>
                 )}
               </div>
