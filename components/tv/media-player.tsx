@@ -87,8 +87,8 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
     return (
       <div
         style={{
-          flex: 1,
-          minHeight: 0,
+          position: "absolute",
+          top: 0, left: 0, right: 0, bottom: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -97,7 +97,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
       >
         <div style={{ textAlign: "center", color: "#ffffff" }}>
           <div style={{ fontSize: "64px", marginBottom: "16px" }}>📺</div>
-          <h2 style={{ margin: 0, fontSize: "32px", fontWeight: 700 }}>SENAI Cast</h2>
+          <h2 style={{ margin: 0, fontSize: "32px", fontWeight: 700 }}>Climatização e Refrigeração</h2>
           <p style={{ margin: "8px 0 0", fontSize: "20px", opacity: 0.8 }}>Aguardando conteúdo...</p>
         </div>
       </div>
@@ -166,8 +166,8 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
     <div
       style={{
         position: "relative",
-        flex: 1,
-        minHeight: 0,
+        width: "100%",
+        height: "100%",
         overflow: "hidden",
         backgroundColor: "#000000",
       }}

@@ -2,6 +2,7 @@
 
 import type { Announcement } from "@/lib/types"
 import { contrastingText, type OverlayBox } from "@/lib/tv-overlay"
+import { useEffect, useRef } from "react"
 
 interface AnnouncementTickerProps {
   announcements: Announcement[]
@@ -9,58 +10,78 @@ interface AnnouncementTickerProps {
 }
 
 export function AnnouncementTicker({ announcements, overlay }: AnnouncementTickerProps) {
-  if (!overlay.visible) return null
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   const active = announcements
     .filter((a) => a.is_active)
     .sort((a, b) => a.priority - b.priority)
     .map((a) => a.content)
 
+  const text = active.join("     •     ")
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || active.length === 0) return
+
+    const interval = setInterval(() => {
+      if (!el) return
+      const maxScroll = el.scrollWidth / 2
+      if (maxScroll <= 0) return
+      if (el.scrollLeft >= maxScroll) {
+        el.scrollLeft = 0
+      } else {
+        el.scrollLeft += 1
+      }
+    }, 30)
+
+    return () => clearInterval(interval)
+  }, [text, active.length])
+
+  if (!overlay.visible) return null
   if (active.length === 0) return null
 
   const background = overlay.color
   const color = contrastingText(background)
-  const text = active.join("     •     ")
 
   return (
-    <footer
+    <div
       style={{
         position: "relative",
         width: "100%",
         height: "52px",
+        minHeight: "52px",
+        maxHeight: "52px",
         flexShrink: 0,
         overflow: "hidden",
         backgroundColor: background,
         color,
         boxSizing: "border-box",
+        display: "block",
+        visibility: "visible",
       }}
     >
-      {/* Duplicate the text so the loop looks seamless */}
       <div
+        ref={containerRef}
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+          whiteSpace: "nowrap",
           display: "flex",
           alignItems: "center",
-          overflow: "hidden",
         }}
       >
-        <div
-          className="animate-ticker"
-          style={{
-            display: "inline-block",
-            whiteSpace: "nowrap",
-            willChange: "transform",
-          }}
-        >
-          <span style={{ paddingLeft: "16px", paddingRight: "16px", fontSize: "22px", fontWeight: 500 }}>
-            {text}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{text}
+        <div style={{ display: "inline-block", whiteSpace: "nowrap", flexShrink: 0 }}>
+          <span style={{ paddingLeft: "24px", paddingRight: "24px", fontSize: "20px", fontWeight: 600 }}>
+            {text}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </span>
+        </div>
+        <div style={{ display: "inline-block", whiteSpace: "nowrap", flexShrink: 0 }}>
+          <span style={{ paddingLeft: "24px", paddingRight: "24px", fontSize: "20px", fontWeight: 600 }}>
+            {text}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
           </span>
         </div>
       </div>
-    </footer>
+    </div>
   )
 }

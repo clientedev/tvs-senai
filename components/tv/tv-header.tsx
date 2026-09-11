@@ -80,9 +80,7 @@ export function TVHeader({ institution, overlay }: TVHeaderProps) {
         alignItems: "center",
         justifyContent: "space-between",
         width: "100%",
-        height: "12%",
-        minHeight: "88px",
-        maxHeight: "120px",
+        height: "100%",
         flexShrink: 0,
         backgroundColor: "#111111",
         borderBottom: "4px solid #E30613",
@@ -122,19 +120,19 @@ export function TVHeader({ institution, overlay }: TVHeaderProps) {
             <p
               style={{
                 margin: 0,
-                fontSize: "11px",
+                fontSize: "12px",
                 fontWeight: 700,
-                letterSpacing: "0.22em",
+                letterSpacing: "0.15em",
                 textTransform: "uppercase",
                 color: "#E30613",
               }}
             >
-              SENAI Cast
+              Climatização e Refrigeração
             </p>
             <h1
               style={{
                 margin: 0,
-                fontSize: "28px",
+                fontSize: "26px",
                 fontWeight: 700,
                 lineHeight: 1.2,
                 whiteSpace: "nowrap",

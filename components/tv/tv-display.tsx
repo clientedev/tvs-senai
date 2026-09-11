@@ -308,6 +308,17 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
     }
   }, [token, loadData, supabase, setupSubscription])
 
+  // Keep-alive heartbeat para SmartTVs (LG WebOS, etc.) evitando sleep / throttling de tela
+  useEffect(() => {
+    const keepAlive = setInterval(() => {
+      try {
+        window.dispatchEvent(new Event("resize"))
+      } catch (e) {}
+    }, 15000)
+
+    return () => clearInterval(keepAlive)
+  }, [])
+
   const handleContentChange = async (content: MediaContent) => {
     // Optional logging
   }
@@ -353,23 +364,81 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
     )
   }
 
+  const hasAnnouncements = Boolean(overlay.announcements?.visible && announcements.some((a) => a.is_active))
+  const hasTransport = Boolean(overlay.transport?.visible)
+  const bottomHeight = (hasAnnouncements ? 52 : 0) + (hasTransport ? 56 : 0)
+
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
+        display: "block",
+        position: "fixed",
+        top: 0,
+        left: 0,
         width: "100vw",
+        height: "100vh",
         overflow: "hidden",
         cursor: "none",
         userSelect: "none",
         backgroundColor: "#000000",
       }}
     >
-      <TVHeader institution={institution} overlay={overlay} />
-      <MediaPlayer contents={contents} onContentChange={handleContentChange} />
-      <AnnouncementTicker announcements={announcements} overlay={overlay.announcements} />
-      <TransportTicker overlay={overlay.transport} />
+      {/* Header fixo no topo: 90px */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "90px",
+          zIndex: 50,
+          display: "block",
+          visibility: "visible",
+        }}
+      >
+        <TVHeader institution={institution} overlay={overlay} />
+      </div>
+
+      {/* Media Player preenche exatamente o espaço entre o header fixo e as faixas fixas */}
+      <div
+        style={{
+          position: "fixed",
+          top: "90px",
+          bottom: `${bottomHeight}px`,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          overflow: "hidden",
+          backgroundColor: "#000000",
+        }}
+      >
+        <MediaPlayer contents={contents} onContentChange={handleContentChange} />
+      </div>
+
+      {/* Faixas inferiores fixas na base: NUNCA somem ou são empurradas para fora */}
+      {bottomHeight > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: `${bottomHeight}px`,
+            zIndex: 50,
+            display: "block",
+            visibility: "visible",
+            backgroundColor: "#111111",
+            boxSizing: "border-box",
+          }}
+        >
+          {hasAnnouncements && (
+            <AnnouncementTicker announcements={announcements} overlay={overlay.announcements} />
+          )}
+          {hasTransport && (
+            <TransportTicker overlay={overlay.transport} />
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { OverlayBox } from "@/lib/tv-overlay"
 
 interface LineStatus {
@@ -25,27 +25,18 @@ const LINE_COLORS: Record<string, { bg: string; text: string }> = {
   "15": { bg: "#8F9194", text: "#FFFFFF" },
 }
 
-const BAR_STYLE: React.CSSProperties = {
-  position: "relative",
-  display: "flex",
-  alignItems: "center",
-  width: "100%",
-  height: "56px",
-  flexShrink: 0,
-  overflow: "hidden",
-  backgroundColor: "#111111",
-  boxSizing: "border-box",
-}
-
 interface TransportTickerProps {
   overlay: OverlayBox
 }
 
 export function TransportTicker({ overlay }: TransportTickerProps) {
-  const [lines, setLines] = useState<LineStatus[]>([])
+  const [lines, setLines]     = useState<LineStatus[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError]     = useState(false)
 
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  // Fetch transport status
   useEffect(() => {
     if (!overlay.visible) return
 
@@ -71,89 +62,111 @@ export function TransportTicker({ overlay }: TransportTickerProps) {
     return () => clearInterval(interval)
   }, [overlay.visible])
 
+  // DOM scrollLeft via setInterval — continuous, never frozen by TV idle power-save
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || lines.length === 0) return
+
+    const interval = setInterval(() => {
+      if (!el) return
+      const maxScroll = el.scrollWidth / 2
+      if (maxScroll <= 0) return
+      if (el.scrollLeft >= maxScroll) {
+        el.scrollLeft = 0
+      } else {
+        el.scrollLeft += 1
+      }
+    }, 30)
+
+    return () => clearInterval(interval)
+  }, [lines.length])
+
   if (!overlay.visible) return null
+
+  const BAR: React.CSSProperties = {
+    position: "relative",
+    display: "block",
+    visibility: "visible",
+    width: "100%",
+    height: "56px",
+    minHeight: "56px",
+    maxHeight: "56px",
+    flexShrink: 0,
+    overflow: "hidden",
+    backgroundColor: "#111111",
+    boxSizing: "border-box",
+  }
 
   if (loading) {
     return (
-      <footer style={BAR_STYLE}>
-        <span style={{ width: "100%", textAlign: "center", fontSize: "16px", color: "rgba(255,255,255,0.6)" }}>
-          Carregando status do transporte...
-        </span>
+      <footer style={BAR}>
+        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: "15px", color: "rgba(255,255,255,0.55)" }}>
+            Carregando status do transporte...
+          </span>
+        </div>
       </footer>
     )
   }
 
   if (error || lines.length === 0) {
     return (
-      <footer style={BAR_STYLE}>
-        <span style={{ width: "100%", textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.45)" }}>
-          Status do transporte indisponível no momento
-        </span>
+      <footer style={BAR}>
+        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)" }}>
+            Status do transporte indisponível
+          </span>
+        </div>
       </footer>
     )
   }
 
-  // Duplicate for seamless loop
-  const tickerItems = [...lines, ...lines]
-
-  return (
-    <footer style={BAR_STYLE}>
+  const renderCard = (l: LineStatus, i: number, prefix: string) => {
+    const colors = LINE_COLORS[l.codigo] || { bg: "#333333", text: "#FFFFFF" }
+    const isNormal = l.status.situacao === "Operação Normal"
+    return (
       <div
+        key={`${prefix}-${l.codigo}-${i}`}
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          overflow: "hidden",
+          display: "inline-flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          height: "100%",
+          padding: "0 24px",
+          borderRight: "1px solid rgba(255,255,255,0.12)",
+          backgroundColor: colors.bg,
+          color: colors.text,
+          boxSizing: "border-box",
+          flexShrink: 0,
+          minWidth: "130px",
         }}
       >
-        <div
-          className="animate-ticker"
-          style={{
-            display: "inline-flex",
-            flexDirection: "row",
-            alignItems: "stretch",
-            height: "100%",
-            whiteSpace: "nowrap",
-            willChange: "transform",
-          }}
-        >
-          {tickerItems.map((l, i) => {
-            const colors = LINE_COLORS[l.codigo] || { bg: "#333333", text: "#FFFFFF" }
-            const isNormal = l.status.situacao === "Operação Normal"
-            return (
-              <div
-                key={`${l.codigo}-${i}`}
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  height: "100%",
-                  padding: "0 24px",
-                  borderRight: "1px solid rgba(255,255,255,0.15)",
-                  backgroundColor: colors.bg,
-                  color: colors.text,
-                  boxSizing: "border-box",
-                  flexShrink: 0,
-                }}
-              >
-                <span style={{ fontSize: "15px", fontWeight: 700, lineHeight: 1.2 }}>{l.nome}</span>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    opacity: isNormal ? 0.9 : 1,
-                    color: isNormal ? colors.text : "#FFE066",
-                  }}
-                >
-                  {l.status.situacao}
-                </span>
-              </div>
-            )
-          })}
+        <span style={{ fontSize: "14px", fontWeight: 700, lineHeight: "1.2" }}>{l.nome}</span>
+        <span style={{ fontSize: "11px", fontWeight: 500, color: isNormal ? colors.text : "#FFE066", opacity: isNormal ? 0.85 : 1 }}>
+          {l.status.situacao}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <footer style={BAR}>
+      <div
+        ref={containerRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+          display: "flex",
+          alignItems: "stretch",
+        }}
+      >
+        <div style={{ display: "inline-flex", flexDirection: "row", height: "100%", flexShrink: 0 }}>
+          {lines.map((l, i) => renderCard(l, i, "a"))}
+        </div>
+        <div style={{ display: "inline-flex", flexDirection: "row", height: "100%", flexShrink: 0 }}>
+          {lines.map((l, i) => renderCard(l, i, "b"))}
         </div>
       </div>
     </footer>
