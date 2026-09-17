@@ -35,7 +35,10 @@ function poolConfig(): PoolConfig {
     return config
   }
 
-  throw new Error("DATABASE_URL não está definida")
+  // Fallback seguro para a fase de build estático (ex: Vercel)
+  config.connectionString = "postgres://postgres:postgres@127.0.0.1:5432/postgres"
+  config.ssl = false
+  return config
 }
 
 export function getPool() {
