@@ -10,17 +10,22 @@ import { LivePlayer } from "./live-player"
 interface MediaPlayerProps {
   contents: MediaContent[]
   onContentChange?: (content: MediaContent) => void
+  onCycleComplete?: () => void
 }
 
-export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
+export function MediaPlayer({ contents, onContentChange, onCycleComplete }: MediaPlayerProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [opacity, setOpacity] = useState(1)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const contentsRef = useRef(contents)
   const onContentChangeRef = useRef(onContentChange)
+  const onCycleCompleteRef = useRef(onCycleComplete)
+  const currentIndexRef = useRef(currentIndex)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => { onContentChangeRef.current = onContentChange }, [onContentChange])
+  useEffect(() => { onCycleCompleteRef.current = onCycleComplete }, [onCycleComplete])
+  useEffect(() => { currentIndexRef.current = currentIndex }, [currentIndex])
 
   useEffect(() => {
     contentsRef.current = contents
@@ -36,8 +41,18 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
     if (list.length === 0) return
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
 
+    const isLastItem = currentIndexRef.current >= list.length - 1
+
     // Fade out
     setOpacity(0)
+
+    // Se concluiu o último item da lista, avisa que o ciclo de conteúdos encerrou
+    if (isLastItem) {
+      setTimeout(() => {
+        onCycleCompleteRef.current?.()
+      }, 350)
+    }
+
     setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % list.length)
       setOpacity(1)
@@ -57,14 +72,12 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
       const duration = (currentContent.duration_seconds || (currentContent.type === "live" ? 300 : 60)) * 1000
       timerRef.current = setTimeout(goToNext, duration)
     } else if (currentContent.type === "video") {
-      if (!currentContent.loop_video) {
-        const maxDuration = (currentContent.duration_seconds || 600) * 1000
-        timerRef.current = setTimeout(goToNext, maxDuration)
-      }
+      const maxDuration = (currentContent.duration_seconds || 600) * 1000
+      timerRef.current = setTimeout(goToNext, maxDuration)
     }
 
     return () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null } }
-  }, [currentContent?.id, currentContent?.type, currentContent?.duration_seconds, currentContent?.loop_video, goToNext])
+  }, [currentContent?.id, currentContent?.type, currentContent?.duration_seconds, goToNext])
 
   const handleVideoEnded = useCallback(() => { goToNext() }, [goToNext])
 
@@ -118,7 +131,7 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
           <iframe
             key={currentContent.id}
             src={embedUrl}
-            style={{ width: "100%", height: "100%", border: "none" }}
+            style={{ width: "100%", height: "100%", border: "none", pointerEvents: "none" }}
             allow="autoplay; encrypted-media"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
@@ -141,11 +154,10 @@ export function MediaPlayer({ contents, onContentChange }: MediaPlayerProps) {
           autoPlay
           muted
           playsInline
-          loop={currentContent.loop_video === true}
-          onEnded={currentContent.loop_video ? undefined : handleVideoEnded}
+          onEnded={handleVideoEnded}
           onError={handleVideoError}
           onCanPlay={handleVideoCanPlay}
-          style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", display: "block" }}
+          style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", display: "block", pointerEvents: "none" }}
         />
       )
     }

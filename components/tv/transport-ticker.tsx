@@ -40,18 +40,49 @@ export function TransportTicker({ overlay }: TransportTickerProps) {
   useEffect(() => {
     if (!overlay.visible) return
 
+    // Carrega transporte salvo em cache imediatamente
+    try {
+      const cached = localStorage.getItem("tv_cache_transport")
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLines(parsed)
+          setLoading(false)
+        }
+      }
+    } catch {}
+
     const fetchStatus = async () => {
       try {
-        setError(false)
         const res = await fetch("/api/transport")
-        if (!res.ok) { setError(true); return }
+        if (!res.ok) {
+          setLines((prev) => {
+            if (prev.length === 0) setError(true)
+            return prev
+          })
+          return
+        }
         const data = await res.json()
-        if (data.error) { setError(true); return }
+        if (data.error) {
+          setLines((prev) => {
+            if (prev.length === 0) setError(true)
+            return prev
+          })
+          return
+        }
         const allLines = data.empresas?.flatMap((e: any) => e.linhas) ?? []
-        setLines(allLines)
-        if (allLines.length > 0) setError(false)
+        if (allLines.length > 0) {
+          setLines(allLines)
+          setError(false)
+          try {
+            localStorage.setItem("tv_cache_transport", JSON.stringify(allLines))
+          } catch {}
+        }
       } catch {
-        setError(true)
+        setLines((prev) => {
+          if (prev.length === 0) setError(true)
+          return prev
+        })
       } finally {
         setLoading(false)
       }

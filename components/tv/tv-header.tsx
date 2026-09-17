@@ -47,13 +47,25 @@ export function TVHeader({ institution, overlay }: TVHeaderProps) {
     if (!showWeather) return
     let cancelled = false
 
+    // Carrega clima salvo em cache imediatamente para nunca sumir
+    try {
+      const cached = localStorage.getItem("tv_cache_weather")
+      if (cached) {
+        setWeather(JSON.parse(cached))
+      }
+    } catch {}
+
     const load = async () => {
       try {
         const res = await fetch("/api/weather")
         if (!res.ok || cancelled) return
         const data = await res.json()
         if (cancelled || data.error) return
-        setWeather({ city: data.city, temperature: data.temperature, label: data.label })
+        const w = { city: data.city, temperature: data.temperature, label: data.label }
+        setWeather(w)
+        try {
+          localStorage.setItem("tv_cache_weather", JSON.stringify(w))
+        } catch {}
       } catch { /* silently ignore on TV */ }
     }
 

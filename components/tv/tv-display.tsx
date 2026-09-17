@@ -29,6 +29,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
   const isLoadingRef = useRef(false)
   const channelRef = useRef<any>(null)
   const isLoadedRef = useRef(false)
+  const pageLoadedAtRef = useRef<number>(Date.now())
 
   // Safe LocalStorage Helper
   const safeStorage = {
@@ -300,7 +301,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
 
     const refreshTimer = setInterval(() => {
       loadData(currentToken, true)
-    }, 5000) // Atualiza a cada 5s para refletir mudancas sem precisar de refresh manual
+    }, 20000) // Atualiza a cada 20s em segundo plano sem sobrecarregar memória
 
     return () => {
       clearInterval(refreshTimer)
@@ -308,16 +309,75 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
     }
   }, [token, loadData, supabase, setupSubscription])
 
-  // Keep-alive heartbeat para SmartTVs (LG WebOS, etc.) evitando sleep / throttling de tela
+  // Keep-alive heartbeat & Screen WakeLock para SmartTVs (LG WebOS, Samsung Tizen, Android TV)
+  // Simula interação do controle remoto (mousemove, pointermove, keydown) para impedir que a TV
+  // oculte os overlays (header e transportes) por inatividade/modo de economia de energia.
   useEffect(() => {
+    let wakeLock: any = null
+
+    const requestWakeLock = async () => {
+      try {
+        if (typeof navigator !== "undefined" && "wakeLock" in navigator && (navigator as any).wakeLock) {
+          wakeLock = await (navigator as any).wakeLock.request("screen")
+        }
+      } catch (e) {
+        // Ignora silenciosamente se a Smart TV não suportar Wake Lock
+      }
+    }
+
+    requestWakeLock()
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        requestWakeLock()
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
     const keepAlive = setInterval(() => {
       try {
-        window.dispatchEvent(new Event("resize"))
+        if (typeof window !== "undefined") {
+          // Eventos sintéticos que simulam o controle remoto da TV
+          window.dispatchEvent(new Event("resize"))
+          window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, cancelable: true, clientX: 1, clientY: 1 }))
+          if (typeof PointerEvent !== "undefined") {
+            window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, cancelable: true, clientX: 1, clientY: 1 }))
+          }
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", code: "ShiftLeft", bubbles: true, cancelable: true }))
+          window.focus()
+        }
       } catch (e) {}
-    }, 15000)
+    }, 5000)
 
-    return () => clearInterval(keepAlive)
+    return () => {
+      clearInterval(keepAlive)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      if (wakeLock && wakeLock.release) {
+        wakeLock.release().catch(() => {})
+      }
+    }
   }, [])
+
+  // Callback executado quando o ciclo de conteúdos (todas as mídias) termina
+  const handleCycleComplete = useCallback(() => {
+    const elapsedMs = Date.now() - pageLoadedAtRef.current
+    // Pelo menos 30 segundos desde o carregamento da página para evitar loops rápidos em mídias curtas
+    if (elapsedMs >= 30000) {
+      if (typeof window !== "undefined") {
+        if (navigator.onLine !== false) {
+          console.log("[TVDisplay] Ciclo de reprodução concluído. Atualizando o site para renovar memória, APIs e cabeçalho...")
+          window.location.reload()
+          return
+        }
+      }
+    }
+
+    // Fallback: se offline ou ainda dentro da janela de proteção de 30s, atualiza dados em background
+    if (token && loadDataRef.current) {
+      loadDataRef.current(token, true)
+    }
+  }, [token])
 
   const handleContentChange = async (content: MediaContent) => {
     // Optional logging
@@ -355,10 +415,10 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
 
   if (!isLoaded || !institution) {
     return (
-      <div style={{ height: "100vh", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#003B71" }}>
+      <div style={{ height: "100vh", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#000000" }}>
         <div style={{ textAlign: "center", color: "#ffffff" }}>
-          <div className="animate-spin" style={{ width: "64px", height: "64px", border: "4px solid rgba(255,255,255,0.3)", borderTopColor: "#ffffff", borderRadius: "50%", margin: "0 auto 16px" }} />
-          <p style={{ fontSize: "20px" }}>Carregando...</p>
+          <div className="animate-spin" style={{ width: "48px", height: "48px", border: "4px solid rgba(255,255,255,0.2)", borderTopColor: "#E30613", borderRadius: "50%", margin: "0 auto 16px" }} />
+          <p style={{ fontSize: "18px", opacity: 0.8 }}>Carregando...</p>
         </div>
       </div>
     )
@@ -383,7 +443,7 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
         backgroundColor: "#000000",
       }}
     >
-      {/* Header fixo no topo: 90px */}
+      {/* Header fixo no topo: 90px com camada acelerada por GPU para nunca ser sobreposto */}
       <div
         style={{
           position: "fixed",
@@ -391,9 +451,14 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
           left: 0,
           right: 0,
           height: "90px",
-          zIndex: 50,
+          zIndex: 999999,
+          transform: "translate3d(0,0,0)",
+          WebkitTransform: "translate3d(0,0,0)",
+          willChange: "transform",
+          isolation: "isolate",
           display: "block",
           visibility: "visible",
+          pointerEvents: "auto",
         }}
       >
         <TVHeader institution={institution} overlay={overlay} />
@@ -407,15 +472,20 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
           bottom: `${bottomHeight}px`,
           left: 0,
           right: 0,
-          zIndex: 10,
+          zIndex: 1,
           overflow: "hidden",
           backgroundColor: "#000000",
+          pointerEvents: "none",
         }}
       >
-        <MediaPlayer contents={contents} onContentChange={handleContentChange} />
+        <MediaPlayer
+          contents={contents}
+          onContentChange={handleContentChange}
+          onCycleComplete={handleCycleComplete}
+        />
       </div>
 
-      {/* Faixas inferiores fixas na base: NUNCA somem ou são empurradas para fora */}
+      {/* Faixas inferiores fixas na base com camada acelerada por GPU */}
       {bottomHeight > 0 && (
         <div
           style={{
@@ -424,11 +494,16 @@ export function TVDisplay({ tvId: routeTvId }: TVDisplayProps) {
             left: 0,
             right: 0,
             height: `${bottomHeight}px`,
-            zIndex: 50,
+            zIndex: 999999,
+            transform: "translate3d(0,0,0)",
+            WebkitTransform: "translate3d(0,0,0)",
+            willChange: "transform",
+            isolation: "isolate",
             display: "block",
             visibility: "visible",
             backgroundColor: "#111111",
             boxSizing: "border-box",
+            pointerEvents: "auto",
           }}
         >
           {hasAnnouncements && (
